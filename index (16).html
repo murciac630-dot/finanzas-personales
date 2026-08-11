@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plantilla de Control Financiero y Flujo de Caja</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .tab-btn.active {
+            border-bottom: 3px solid #16a34a;
+            color: #15803d;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="h-full font-sans text-slate-800 antialiased flex flex-col">
+
+    <!-- Top Header Bar -->
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-7xl mx-mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-emerald-500 text-white rounded-xl shadow-lg">
+                    <i class="fa-solid fa-wallet text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight">Organizador Financiero Personal</h1>
+                    <p class="text-xs text-slate-400">Control de Flujo de Caja & Costo Mínimo de Vida</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3 text-sm">
+                <div class="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-2">
+                    <span class="text-xs text-slate-400">Moneda:</span>
+                    <select id="currencySelect" onchange="updateCurrencySymbol()" class="bg-transparent font-semibold text-emerald-400 focus:outline-none cursor-pointer">
+                        <option value="$" class="bg-slate-800 text-white">$ (USD / COP / MXN)</option>
+                        <option value="€" class="bg-slate-800 text-white">€ (EUR)</option>
+                        <option value="S/." class="bg-slate-800 text-white">S/. (PEN)</option>
+                        <option value="R$" class="bg-slate-800 text-white">R$ (BRL)</option>
+                    </select>
+                </div>
+                <button onclick="exportData()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-200 text-xs font-medium transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-download text-emerald-400"></i>
+                    <span>Exportar</span>
+                </button>
+                <button onclick="resetToSampleData()" class="px-3 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/50 rounded-lg text-rose-300 text-xs font-medium transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate-right text-rose-400"></i>
+                    <span>Restablecer</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-white border-b border-slate-200 sticky top-[57px] z-20 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex space-x-1 sm:space-x-8 overflow-x-auto custom-scrollbar no-scrollbar text-sm">
+                <button onclick="switchTab('resumen')" id="tab-resumen" class="tab-btn active py-3.5 px-3 flex items-center gap-2 whitespace-nowrap text-slate-600 hover:text-emerald-700">
+                    <i class="fa-solid fa-chart-pie"></i> Resumen & Flujo
+                </button>
+                <button onclick="switchTab('ingresos')" id="tab-ingresos" class="tab-btn py-3.5 px-3 flex items-center gap-2 whitespace-nowrap text-slate-600 hover:text-emerald-700">
+                    <i class="fa-solid fa-arrow-trend-up text-emerald-600"></i> Ingresos
+                </button>
+                <button onclick="switchTab('costosFijos')" id="tab-costosFijos" class="tab-btn py-3.5 px-3 flex items-center gap-2 whitespace-nowrap text-slate-600 hover:text-emerald-700">
+                    <i class="fa-solid fa-house-lock text-blue-600"></i> Costos Fijos
+                </button>
+                <button onclick="switchTab('gastosVariables')" id="tab-gastosVariables" class="tab-btn py-3.5 px-3 flex items-center gap-2 whitespace-nowrap text-slate-600 hover:text-emerald-700">
+                    <i class="fa-solid fa-cart-shopping text-amber-600"></i> Gastos Variables
+                </button>
+                <button onclick="switchTab('deudas')" id="tab-deudas" class="tab-btn py-3.5 px-3 flex items-center gap-2 whitespace-nowrap text-slate-600 hover:text-emerald-700">
+                    <i class="fa-solid fa-credit-card text-rose-600"></i> Deudas & Obligaciones
+                </button>
+                <button onclick="switchTab('comparativo')" id="tab-comparativo" class="tab-btn py-3.5 px-3 flex items-center gap-2 whitespace-nowrap text-slate-600 hover:text-emerald-700">
+                    <i class="fa-solid fa-magnifying-glass-dollar text-purple-600"></i> Presupuesto vs Real (Fugas)
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- SECTION 1: RESUMEN Y FLUJO DE CAJA -->
+        <section id="sec-resumen" class="tab-content space-y-6">
+            
+            <!-- KPI Summary Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Ingresos Totales -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-medium uppercase tracking-wider text-slate-500">Ingresos Reales</p>
+                            <h3 class="text-2xl font-bold text-slate-900 mt-1" id="kpiIngresos">$0</h3>
+                            <p class="text-xs text-slate-500 mt-1" id="kpiIngresosPresupuesto">Esperado: $0</p>
+                        </div>
+                        <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+                            <i class="fa-solid fa-circle-arrow-down text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="w-full bg-slate-100 h-1.5 rounded-full mt-4 overflow-hidden">
+                        <div id="barIngresos" class="bg-emerald-500 h-full rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Costo Mínimo Mensual -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-medium uppercase tracking-wider text-slate-500">Costo Mínimo Mensual</p>
+                            <h3 class="text-2xl font-bold text-blue-700 mt-1" id="kpiCostoMinimo">$0</h3>
+                            <p class="text-xs text-slate-500 mt-1">Fijos + Cuotas Mínimas</p>
+                        </div>
+                        <div class="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                            <i class="fa-solid fa-shield-halved text-xl"></i>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-blue-600 font-medium mt-4 bg-blue-50 px-2 py-1 rounded inline-block">
+                        <i class="fa-solid fa-circle-info"></i> Piso de supervivencia sin déficit
+                    </p>
+                </div>
+
+                <!-- Total Gastado Real -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-medium uppercase tracking-wider text-slate-500">Gastos + Deudas Reales</p>
+                            <h3 class="text-2xl font-bold text-rose-600 mt-1" id="kpiGastosTotales">$0</h3>
+                            <p class="text-xs text-slate-500 mt-1" id="kpiGastosPresupuesto">Presupuestado: $0</p>
+                        </div>
+                        <div class="p-3 bg-rose-50 text-rose-600 rounded-xl">
+                            <i class="fa-solid fa-circle-arrow-up text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="w-full bg-slate-100 h-1.5 rounded-full mt-4 overflow-hidden">
+                        <div id="barGastos" class="bg-rose-500 h-full rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Flujo Disponible -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-medium uppercase tracking-wider text-slate-500">Flujo Disponible Real</p>
+                            <h3 class="text-2xl font-bold mt-1" id="kpiFlujoDisponible">$0</h3>
+                            <p class="text-xs text-slate-500 mt-1" id="kpiEstadoFlujo">Superávit / Déficit</p>
+                        </div>
+                        <div id="kpiFlujoIconBg" class="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+                            <i class="fa-solid fa-scale-balanced text-xl"></i>
+                        </div>
+                    </div>
+                    <p id="kpiFlujoSubtext" class="text-xs font-semibold mt-4">Calculando...</p>
+                </div>
+            </div>
+
+            <!-- Meta de Producción / Generación Mínima (Indicador Clave Punto 5) -->
+            <div class="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-6 rounded-2xl shadow-md">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <div class="space-y-1 max-w-xl">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-slate-950 uppercase">Punto Crítico</span>
+                            <h3 class="text-lg font-bold">Meta Mínima de Generación de Ingresos</h3>
+                        </div>
+                        <p class="text-xs text-slate-300">
+                            Monto exacto que necesitas producir para cubrir tus **Costos Fijos** y **Cuotas de Deuda** sin entrar en déficit financiero ni endeudamiento adicional.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full lg:w-auto">
+                        <div class="bg-slate-800/80 border border-slate-700/80 p-3.5 rounded-xl text-center">
+                            <p class="text-[11px] font-medium text-slate-400 uppercase">Diario (30 días)</p>
+                            <p class="text-lg font-bold text-emerald-400 mt-0.5" id="targetDiario30">$0</p>
+                        </div>
+                        <div class="bg-slate-800/80 border border-slate-700/80 p-3.5 rounded-xl text-center">
+                            <p class="text-[11px] font-medium text-slate-400 uppercase">Diario (22 días hábiles)</p>
+                            <p class="text-lg font-bold text-amber-300 mt-0.5" id="targetDiario22">$0</p>
+                        </div>
+                        <div class="bg-slate-800/80 border border-slate-700/80 p-3.5 rounded-xl text-center">
+                            <p class="text-[11px] font-medium text-slate-400 uppercase">Semanal (4 semanas)</p>
+                            <p class="text-lg font-bold text-blue-300 mt-0.5" id="targetSemanal">$0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Chart 1: Presupuesto vs Real -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-chart-bar text-emerald-600"></i> Presupuestado vs. Real
+                        </h4>
+                        <span class="text-xs text-slate-400">Comparativa mensual</span>
+                    </div>
+                    <div class="relative h-64 w-full">
+                        <canvas id="chartPresupuestoVsReal"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 2: Distribución de Salidas -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-indigo-600"></i> Distribución Real de Gastos
+                        </h4>
+                        <span class="text-xs text-slate-400">Desglose por categoría</span>
+                    </div>
+                    <div class="relative h-64 w-full flex items-center justify-center">
+                        <canvas id="chartDistribucionGastos"></canvas>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- SECTION 2: INGRESOS -->
+        <section id="sec-ingresos" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-arrow-trend-up text-emerald-600"></i> 4. Registro de Fuentes de Ingreso
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Diferencia ingresos seguros (fijos) de ingresos variables o por proyectos.</p>
+                    </div>
+                    <button onclick="openModal('modalIngreso')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Agregar Ingreso
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+                                <th class="py-3 px-4">Fuente / Concepto</th>
+                                <th class="py-3 px-4">Tipo</th>
+                                <th class="py-3 px-4 text-right">Valor Esperado</th>
+                                <th class="py-3 px-4 text-right">Valor Recibido</th>
+                                <th class="py-3 px-4 text-center">Diferencia</th>
+                                <th class="py-3 px-4">Fecha Recibido</th>
+                                <th class="py-3 px-4 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyIngresos" class="divide-y divide-slate-100 text-slate-700">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: COSTOS FIJOS -->
+        <section id="sec-costosFijos" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-house-lock text-blue-600"></i> 1. Costos Fijos Mensuales
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Erogaciones obligatorias que mantendrán tu operación básica funcionando.</p>
+                    </div>
+                    <button onclick="openModal('modalCostosFijos')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm transition flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Agregar Costo Fijo
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+                                <th class="py-3 px-4">Concepto</th>
+                                <th class="py-3 px-4 text-right">Presupuesto</th>
+                                <th class="py-3 px-4 text-right">Gasto Real</th>
+                                <th class="py-3 px-4 text-center">Estado</th>
+                                <th class="py-3 px-4 text-center">Día Límite</th>
+                                <th class="py-3 px-4 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyCostosFijos" class="divide-y divide-slate-100 text-slate-700">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: GASTOS VARIABLES -->
+        <section id="sec-gastosVariables" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-cart-shopping text-amber-600"></i> 2. Gastos Variables
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Gastos modulables o fluctuantes según hábitos y consumo del mes.</p>
+                    </div>
+                    <button onclick="openModal('modalGastosVariables')" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold shadow-sm transition flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Agregar Gasto Variable
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+                                <th class="py-3 px-4">Categoría / Ítem</th>
+                                <th class="py-3 px-4 text-right">Presupuesto Limite</th>
+                                <th class="py-3 px-4 text-right">Gasto Ejecutado</th>
+                                <th class="py-3 px-4 text-center">Variación</th>
+                                <th class="py-3 px-4 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyGastosVariables" class="divide-y divide-slate-100 text-slate-700">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 5: DEUDAS Y OBLIGACIONES -->
+        <section id="sec-deudas" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-credit-card text-rose-600"></i> 3. Deudas y Obligaciones Financieras
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Control de saldos insolutos, cuotas periódicas e impacto en flujo de caja.</p>
+                    </div>
+                    <button onclick="openModal('modalDeudas')" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-sm transition flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Agregar Obligación
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+                                <th class="py-3 px-4">Obligación / Entidad</th>
+                                <th class="py-3 px-4 text-right">Saldo Total</th>
+                                <th class="py-3 px-4 text-right">Cuota Mensual</th>
+                                <th class="py-3 px-4 text-center">Tasa Interés (%)</th>
+                                <th class="py-3 px-4 text-center">Día Pago</th>
+                                <th class="py-3 px-4 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyDeudas" class="divide-y divide-slate-100 text-slate-700">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 6: COMPARATIVO Y DETECCIÓN DE FUGAS -->
+        <section id="sec-comparativo" class="tab-content hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-magnifying-glass-dollar text-purple-600"></i> 6. Análisis de Desviaciones y Detección de Fugas
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Comparación automática entre tu presupuesto (Nivel 1) y tus gastos reales ejecutados (Nivel 2).</p>
+                    </div>
+                </div>
+
+                <!-- Leakage Alert Container -->
+                <div id="leakageSummaryContainer" class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 uppercase font-semibold border-b border-slate-200">
+                                <th class="py-3 px-4">Tipo</th>
+                                <th class="py-3 px-4">Categoría / Ítem</th>
+                                <th class="py-3 px-4 text-right">Presupuesto</th>
+                                <th class="py-3 px-4 text-right">Real Ejecutado</th>
+                                <th class="py-3 px-4 text-right">Desviación / Fuga</th>
+                                <th class="py-3 px-4 text-center">Estado Semáforo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyComparativo" class="divide-y divide-slate-100 text-slate-700">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODALS SECTION -->
+    <!-- Modal Ingreso -->
+    <div id="modalIngreso" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4 animate-in fade-in duration-150">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-900 text-sm">Agregar Fuente de Ingreso</h3>
+                <button onclick="closeModal('modalIngreso')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="formIngreso" onsubmit="saveIngreso(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Fuente / Concepto</label>
+                    <input type="text" id="ingFuente" required placeholder="Ej: Salario, Freelance, Rendimientos" class="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Tipo de Ingreso</label>
+                    <select id="ingTipo" class="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        <option value="Seguro / Fijo">Seguro / Fijo</option>
+                        <option value="Variable / Proyecto">Variable / Proyecto</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Valor Esperado</label>
+                        <input type="number" step="any" id="ingEsperado" required placeholder="0.00" class="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Valor Recibido</label>
+                        <input type="number" step="any" id="ingRecibido" placeholder="0.00" class="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Fecha Recibido</label>
+                    <input type="date" id="ingFecha" class="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modalIngreso')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Costo Fijo -->
+    <div id="modalCostosFijos" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-900 text-sm">Agregar Costo Fijo</h3>
+                <button onclick="closeModal('modalCostosFijos')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="formCostoFijo" onsubmit="saveCostoFijo(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Concepto</label>
+                    <input type="text" id="cfConcepto" required placeholder="Ej: Arriendo, Internet, Plan Móvil" class="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Presupuesto</label>
+                        <input type="number" step="any" id="cfPresupuesto" required placeholder="0.00" class="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Gasto Real</label>
+                        <input type="number" step="any" id="cfReal" placeholder="0.00" class="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Estado</label>
+                        <select id="cfEstado" class="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="Pagado">Pagado</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Día Límite de Pago</label>
+                        <input type="number" min="1" max="31" id="cfDia" placeholder="Ej: 5" class="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modalCostosFijos')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Gasto Variable -->
+    <div id="modalGastosVariables" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-900 text-sm">Agregar Gasto Variable</h3>
+                <button onclick="closeModal('modalGastosVariables')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="formGastoVariable" onsubmit="saveGastoVariable(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Categoría / Ítem</label>
+                    <input type="text" id="gvCategoria" required placeholder="Ej: Domicilios, Entretenimiento, Ropa" class="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Presupuesto Límite</label>
+                        <input type="number" step="any" id="gvPresupuesto" required placeholder="0.00" class="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Ejecutado Real</label>
+                        <input type="number" step="any" id="gvReal" placeholder="0.00" class="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modalGastosVariables')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-medium">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Deuda -->
+    <div id="modalDeudas" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-900 text-sm">Agregar Deuda u Obligación</h3>
+                <button onclick="closeModal('modalDeudas')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="formDeuda" onsubmit="saveDeuda(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Obligación / Entidad</label>
+                    <input type="text" id="deudaNombre" required placeholder="Ej: Tarjeta de Crédito, Préstamo Banco" class="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-rose-500 focus:outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Saldo Total Deuda</label>
+                        <input type="number" step="any" id="deudaSaldo" required placeholder="0.00" class="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-rose-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Cuota Mensual</label>
+                        <input type="number" step="any" id="deudaCuota" required placeholder="0.00" class="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-rose-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Tasa Interés Mensual (%)</label>
+                        <input type="number" step="any" id="deudaInteres" placeholder="Ej: 2.1" class="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-rose-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Día Límite Pago</label>
+                        <input type="number" min="1" max="31" id="deudaDia" placeholder="Ej: 15" class="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-rose-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modalDeudas')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-medium">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none text-xs">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+        <span id="toastMsg">Notificación</span>
+    </div>
+
+    <script>
+        let currencySymbol = '$';
+        
+        // Initial Sample Data Structure
+        const sampleState = {
+            ingresos: [
+                { id: '1', fuente: 'Salario Fijo', tipo: 'Seguro / Fijo', esperado: 2500, recibido: 2500, fecha: '2026-08-01' },
+                { id: '2', fuente: 'Consultoría / Freelance', tipo: 'Variable / Proyecto', esperado: 800, recibido: 650, fecha: '2026-08-10' }
+            ],
+            costosFijos: [
+                { id: '1', concepto: 'Arriendo / Hipoteca', presupuesto: 900, real: 900, estado: 'Pagado', dia: 5 },
+                { id: '2', concepto: 'Servicios Públicos (Luz/Agua/Gas)', presupuesto: 150, real: 165, estado: 'Pagado', dia: 10 },
+                { id: '3', concepto: 'Internet & Telefonía', presupuesto: 60, real: 60, estado: 'Pagado', dia: 12 },
+                { id: '4', concepto: 'Alimentación Básica Mercado', presupuesto: 400, real: 420, estado: 'Pagado', dia: 15 },
+                { id: '5', concepto: 'Seguro de Salud / Transporte', presupuesto: 180, real: 180, estado: 'Pendiente', dia: 20 },
+                { id: '6', concepto: 'Suscripciones Digitales', presupuesto: 35, real: 35, estado: 'Pagado', dia: 1 }
+            ],
+            gastosVariables: [
+                { id: '1', categoria: 'Comidas fuera & Domicilios', presupuesto: 150, real: 210 },
+                { id: '2', categoria: 'Entretenimiento & Salidas', presupuesto: 120, real: 90 },
+                { id: '3', categoria: 'Compras Personales & Ropa', presupuesto: 100, real: 140 },
+                { id: '4', categoria: 'Mantenimiento & Reparaciones', presupuesto: 50, real: 20 },
+                { id: '5', categoria: 'Imprevistos', presupuesto: 80, real: 0 }
+            ],
+            deudas: [
+                { id: '1', nombre: 'Tarjeta de Crédito Visa', saldo: 2400, cuota: 220, interes: 2.2, dia: 18 },
+                { id: '2', nombre: 'Préstamo Libre Inversión', saldo: 5000, cuota: 310, interes: 1.5, dia: 25 }
+            ]
+        };
+
+        let state = JSON.parse(localStorage.getItem('finanzas_state')) || JSON.parse(JSON.stringify(sampleState));
+
+        // Chart References
+        let chartBarInstance = null;
+        let chartPieInstance = null;
+
+        function formatMoney(num) {
+            const val = parseFloat(num) || 0;
+            return currencySymbol + ' ' + val.toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+        }
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.innerText = msg;
+            toastIcon.className = isError ? 'fa-solid fa-circle-exclamation text-rose-400 text-base' : 'fa-solid fa-circle-check text-emerald-400 text-base';
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function saveData() {
+            localStorage.setItem('finanzas_state', JSON.stringify(state));
+            renderAll();
+        }
+
+        function updateCurrencySymbol() {
+            currencySymbol = document.getElementById('currencySelect').value;
+            renderAll();
+        }
+
+        function resetToSampleData() {
+            state = JSON.parse(JSON.stringify(sampleState));
+            saveData();
+            showToast('Datos reestablecidos a la plantilla inicial');
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `Finanzas_Personales_FlujoCaja.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast('Archivo JSON exportado correctamente');
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+
+            const targetBtn = document.getElementById(`tab-${tabId}`);
+            const targetContent = document.getElementById(`sec-${tabId}`);
+
+            if (targetBtn) targetBtn.classList.add('active');
+            if (targetContent) targetContent.classList.remove('hidden');
+
+            if (tabId === 'resumen') {
+                renderCharts();
+            }
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        // Ingresos CRUD
+        function saveIngreso(e) {
+            e.preventDefault();
+            const fuente = document.getElementById('ingFuente').value;
+            const tipo = document.getElementById('ingTipo').value;
+            const esperado = parseFloat(document.getElementById('ingEsperado').value) || 0;
+            const recibido = parseFloat(document.getElementById('ingRecibido').value) || 0;
+            const fecha = document.getElementById('ingFecha').value || new Date().toISOString().split('T')[0];
+
+            state.ingresos.push({
+                id: Date.now().toString(),
+                fuente, tipo, esperado, recibido, fecha
+            });
+
+            document.getElementById('formIngreso').reset();
+            closeModal('modalIngreso');
+            saveData();
+            showToast('Ingreso registrado');
+        }
+
+        function deleteIngreso(id) {
+            state.ingresos = state.ingresos.filter(i => i.id !== id);
+            saveData();
+            showToast('Ingreso eliminado');
+        }
+
+        // Costos Fijos CRUD
+        function saveCostoFijo(e) {
+            e.preventDefault();
+            const concepto = document.getElementById('cfConcepto').value;
+            const presupuesto = parseFloat(document.getElementById('cfPresupuesto').value) || 0;
+            const real = parseFloat(document.getElementById('cfReal').value) || 0;
+            const estado = document.getElementById('cfEstado').value;
+            const dia = parseInt(document.getElementById('cfDia').value) || 1;
+
+            state.costosFijos.push({
+                id: Date.now().toString(),
+                concepto, presupuesto, real, estado, dia
+            });
+
+            document.getElementById('formCostoFijo').reset();
+            closeModal('modalCostosFijos');
+            saveData();
+            showToast('Costo Fijo guardado');
+        }
+
+        function deleteCostoFijo(id) {
+            state.costosFijos = state.costosFijos.filter(i => i.id !== id);
+            saveData();
+            showToast('Costo Fijo eliminado');
+        }
+
+        // Gastos Variables CRUD
+        function saveGastoVariable(e) {
+            e.preventDefault();
+            const categoria = document.getElementById('gvCategoria').value;
+            const presupuesto = parseFloat(document.getElementById('gvPresupuesto').value) || 0;
+            const real = parseFloat(document.getElementById('gvReal').value) || 0;
+
+            state.gastosVariables.push({
+                id: Date.now().toString(),
+                categoria, presupuesto, real
+            });
+
+            document.getElementById('formGastoVariable').reset();
+            closeModal('modalGastosVariables');
+            saveData();
+            showToast('Gasto Variable registrado');
+        }
+
+        function deleteGastoVariable(id) {
+            state.gastosVariables = state.gastosVariables.filter(i => i.id !== id);
+            saveData();
+            showToast('Gasto Variable eliminado');
+        }
+
+        // Deudas CRUD
+        function saveDeuda(e) {
+            e.preventDefault();
+            const nombre = document.getElementById('deudaNombre').value;
+            const saldo = parseFloat(document.getElementById('deudaSaldo').value) || 0;
+            const cuota = parseFloat(document.getElementById('deudaCuota').value) || 0;
+            const interes = parseFloat(document.getElementById('deudaInteres').value) || 0;
+            const dia = parseInt(document.getElementById('deudaDia').value) || 1;
+
+            state.deudas.push({
+                id: Date.now().toString(),
+                nombre, saldo, cuota, interes, dia
+            });
+
+            document.getElementById('formDeuda').reset();
+            closeModal('modalDeudas');
+            saveData();
+            showToast('Obligación registrada');
+        }
+
+        function deleteDeuda(id) {
+            state.deudas = state.deudas.filter(i => i.id !== id);
+            saveData();
+            showToast('Obligación eliminada');
+        }
+
+        function calculateTotals() {
+            const totalIngresosEsperado = state.ingresos.reduce((acc, item) => acc + (item.esperado || 0), 0);
+            const totalIngresosRecibido = state.ingresos.reduce((acc, item) => acc + (item.recibido || 0), 0);
+
+            const totalCFPresupuesto = state.costosFijos.reduce((acc, item) => acc + (item.presupuesto || 0), 0);
+            const totalCFReal = state.costosFijos.reduce((acc, item) => acc + (item.real || 0), 0);
+
+            const totalGVPresupuesto = state.gastosVariables.reduce((acc, item) => acc + (item.presupuesto || 0), 0);
+            const totalGVReal = state.gastosVariables.reduce((acc, item) => acc + (item.real || 0), 0);
+
+            const totalCuotaDeudas = state.deudas.reduce((acc, item) => acc + (item.cuota || 0), 0);
+            const totalSaldoDeudas = state.deudas.reduce((acc, item) => acc + (item.saldo || 0), 0);
+
+            // Costo Mínimo Mensual = Costos Fijos Presupuestados + Cuotas de Deuda
+            const costoMinimoMensual = totalCFPresupuesto + totalCuotaDeudas;
+
+            // Total Gastos Reales (Salidas de Caja) = Costos Fijos Reales + Gastos Variables Reales + Cuotas Deudas
+            const totalGastosReales = totalCFReal + totalGVReal + totalCuotaDeudas;
+            const totalGastosPresupuesto = totalCFPresupuesto + totalGVPresupuesto + totalCuotaDeudas;
+
+            // Flujo Disponible Real = Ingresos Recibidos - Total Salidas Reales
+            const flujoDisponibleReal = totalIngresosRecibido - totalGastosReales;
+
+            return {
+                totalIngresosEsperado,
+                totalIngresosRecibido,
+                totalCFPresupuesto,
+                totalCFReal,
+                totalGVPresupuesto,
+                totalGVReal,
+                totalCuotaDeudas,
+                totalSaldoDeudas,
+                costoMinimoMensual,
+                totalGastosReales,
+                totalGastosPresupuesto,
+                flujoDisponibleReal
+            };
+        }
+
+        function renderAll() {
+            const totals = calculateTotals();
+
+            // Render KPIs
+            document.getElementById('kpiIngresos').innerText = formatMoney(totals.totalIngresosRecibido);
+            document.getElementById('kpiIngresosPresupuesto').innerText = 'Esperado: ' + formatMoney(totals.totalIngresosEsperado);
+
+            document.getElementById('kpiCostoMinimo').innerText = formatMoney(totals.costoMinimoMensual);
+
+            document.getElementById('kpiGastosTotales').innerText = formatMoney(totals.totalGastosReales);
+            document.getElementById('kpiGastosPresupuesto').innerText = 'Presupuestado: ' + formatMoney(totals.totalGastosPresupuesto);
+
+            const kpiFlujo = document.getElementById('kpiFlujoDisponible');
+            const kpiFlujoSubtext = document.getElementById('kpiFlujoSubtext');
+            const kpiFlujoIconBg = document.getElementById('kpiFlujoIconBg');
+
+            kpiFlujo.innerText = formatMoney(totals.flujoDisponibleReal);
+
+            if (totals.flujoDisponibleReal >= 0) {
+                kpiFlujo.className = 'text-2xl font-bold mt-1 text-emerald-600';
+                kpiFlujoSubtext.innerText = 'Superávit positivo disponible';
+                kpiFlujoSubtext.className = 'text-xs font-semibold mt-4 text-emerald-600';
+                kpiFlujoIconBg.className = 'p-3 bg-emerald-50 text-emerald-600 rounded-xl';
+            } else {
+                kpiFlujo.className = 'text-2xl font-bold mt-1 text-rose-600';
+                kpiFlujoSubtext.innerText = '¡Déficit financiero en caja!';
+                kpiFlujoSubtext.className = 'text-xs font-semibold mt-4 text-rose-600';
+                kpiFlujoIconBg.className = 'p-3 bg-rose-50 text-rose-600 rounded-xl';
+            }
+
+            // Target Generation Calculations
+            const minCosto = totals.costoMinimoMensual;
+            document.getElementById('targetDiario30').innerText = formatMoney(minCosto / 30);
+            document.getElementById('targetDiario22').innerText = formatMoney(minCosto / 22);
+            document.getElementById('targetSemanal').innerText = formatMoney(minCosto / 4);
+
+            // Progress Bars
+            const pctIngresos = totals.totalIngresosEsperado > 0 ? Math.min((totals.totalIngresosRecibido / totals.totalIngresosEsperado) * 100, 100) : 0;
+            document.getElementById('barIngresos').style.width = pctIngresos + '%';
+
+            const pctGastos = totals.totalGastosPresupuesto > 0 ? Math.min((totals.totalGastosReales / totals.totalGastosPresupuesto) * 100, 100) : 0;
+            document.getElementById('barGastos').style.width = pctGastos + '%';
+
+            // Render Tables
+            renderIngresosTable();
+            renderCostosFijosTable();
+            renderGastosVariablesTable();
+            renderDeudasTable();
+            renderComparativoTable(totals);
+
+            // Render Charts
+            renderCharts();
+        }
+
+        function renderIngresosTable() {
+            const tbody = document.getElementById('tbodyIngresos');
+            tbody.innerHTML = '';
+
+            state.ingresos.forEach(item => {
+                const diff = (item.recibido || 0) - (item.esperado || 0);
+                const diffClass = diff >= 0 ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold';
+                const tagClass = item.tipo.includes('Fijo') ? 'bg-emerald-50 text-emerald-700' : 'bg-purple-50 text-purple-700';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="py-3 px-4 font-semibold text-slate-900">${item.fuente}</td>
+                        <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium ${tagClass}">${item.tipo}</span></td>
+                        <td class="py-3 px-4 text-right">${formatMoney(item.esperado)}</td>
+                        <td class="py-3 px-4 text-right font-medium">${formatMoney(item.recibido)}</td>
+                        <td class="py-3 px-4 text-center ${diffClass}">${diff > 0 ? '+' : ''}${formatMoney(diff)}</td>
+                        <td class="py-3 px-4 text-slate-500">${item.fecha || '-'}</td>
+                        <td class="py-3 px-4 text-center">
+                            <button onclick="deleteIngreso('${item.id}')" class="text-slate-400 hover:text-rose-600 transition"><i class="fa-regular fa-trash-can"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderCostosFijosTable() {
+            const tbody = document.getElementById('tbodyCostosFijos');
+            tbody.innerHTML = '';
+
+            state.costosFijos.forEach(item => {
+                const badgeEstado = item.estado === 'Pagado' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="py-3 px-4 font-medium text-slate-900">${item.concepto}</td>
+                        <td class="py-3 px-4 text-right">${formatMoney(item.presupuesto)}</td>
+                        <td class="py-3 px-4 text-right font-semibold">${formatMoney(item.real)}</td>
+                        <td class="py-3 px-4 text-center"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${badgeEstado}">${item.estado}</span></td>
+                        <td class="py-3 px-4 text-center text-slate-500">Día ${item.dia}</td>
+                        <td class="py-3 px-4 text-center">
+                            <button onclick="deleteCostoFijo('${item.id}')" class="text-slate-400 hover:text-rose-600 transition"><i class="fa-regular fa-trash-can"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderGastosVariablesTable() {
+            const tbody = document.getElementById('tbodyGastosVariables');
+            tbody.innerHTML = '';
+
+            state.gastosVariables.forEach(item => {
+                const diff = (item.real || 0) - (item.presupuesto || 0);
+                const badge = diff > 0 ? 'bg-rose-100 text-rose-700 font-bold' : 'bg-emerald-100 text-emerald-700 font-medium';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="py-3 px-4 font-medium text-slate-900">${item.categoria}</td>
+                        <td class="py-3 px-4 text-right">${formatMoney(item.presupuesto)}</td>
+                        <td class="py-3 px-4 text-right font-semibold">${formatMoney(item.real)}</td>
+                        <td class="py-3 px-4 text-center"><span class="px-2.5 py-0.5 rounded-full text-[10px] ${badge}">${diff > 0 ? 'Exceso: +' + formatMoney(diff) : 'Ahorro: ' + formatMoney(Math.abs(diff))}</span></td>
+                        <td class="py-3 px-4 text-center">
+                            <button onclick="deleteGastoVariable('${item.id}')" class="text-slate-400 hover:text-rose-600 transition"><i class="fa-regular fa-trash-can"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderDeudasTable() {
+            const tbody = document.getElementById('tbodyDeudas');
+            tbody.innerHTML = '';
+
+            state.deudas.forEach(item => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="py-3 px-4 font-medium text-slate-900">${item.nombre}</td>
+                        <td class="py-3 px-4 text-right font-semibold text-rose-600">${formatMoney(item.saldo)}</td>
+                        <td class="py-3 px-4 text-right font-bold text-slate-900">${formatMoney(item.cuota)}</td>
+                        <td class="py-3 px-4 text-center text-slate-600">${item.interes}% pm</td>
+                        <td class="py-3 px-4 text-center text-slate-500">Día ${item.dia}</td>
+                        <td class="py-3 px-4 text-center">
+                            <button onclick="deleteDeuda('${item.id}')" class="text-slate-400 hover:text-rose-600 transition"><i class="fa-regular fa-trash-can"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderComparativoTable(totals) {
+            const tbody = document.getElementById('tbodyComparativo');
+            tbody.innerHTML = '';
+
+            let totalFugas = 0;
+            let fugasCount = 0;
+
+            const allCategories = [
+                ...state.costosFijos.map(i => ({ tipo: 'Costo Fijo', nombre: i.concepto, presupuesto: i.presupuesto, real: i.real })),
+                ...state.gastosVariables.map(i => ({ tipo: 'Gasto Variable', nombre: i.categoria, presupuesto: i.presupuesto, real: i.real }))
+            ];
+
+            allCategories.forEach(item => {
+                const fuga = item.real - item.presupuesto;
+                let semaforo = '';
+                
+                if (fuga > 0) {
+                    totalFugas += fuga;
+                    fugasCount++;
+                    semaforo = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 flex items-center justify-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> Fuga de Dinero</span>`;
+                } else if (fuga === 0) {
+                    semaforo = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-700 flex items-center justify-center gap-1"><i class="fa-solid fa-check"></i> Exacto</span>`;
+                } else {
+                    semaforo = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-700 flex items-center justify-center gap-1"><i class="fa-solid fa-piggy-bank"></i> Bajo Presupuesto</span>`;
+                }
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="py-3 px-4 text-slate-500 font-medium">${item.tipo}</td>
+                        <td class="py-3 px-4 font-semibold text-slate-900">${item.nombre}</td>
+                        <td class="py-3 px-4 text-right">${formatMoney(item.presupuesto)}</td>
+                        <td class="py-3 px-4 text-right font-medium">${formatMoney(item.real)}</td>
+                        <td class="py-3 px-4 text-right font-semibold ${fuga > 0 ? 'text-rose-600' : 'text-emerald-600'}">${fuga > 0 ? '+' : ''}${formatMoney(fuga)}</td>
+                        <td class="py-3 px-4 text-center">${semaforo}</td>
+                    </tr>
+                `;
+            });
+
+            // Summary Leakage Box
+            const container = document.getElementById('leakageSummaryContainer');
+            if (fugasCount > 0) {
+                container.className = 'p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 flex items-center justify-between';
+                container.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="p-2.5 bg-rose-100 text-rose-600 rounded-lg">
+                            <i class="fa-solid fa-fire text-lg"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-sm">Se han detectado ${fugasCount} fugas de dinero</h4>
+                            <p class="text-xs text-rose-700">El gasto real superó el presupuesto planificado en estas categorías.</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs uppercase font-semibold text-rose-500">Monto Fuga Total</span>
+                        <p class="text-xl font-extrabold text-rose-700">+${formatMoney(totalFugas)}</p>
+                    </div>
+                `;
+            } else {
+                container.className = 'p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex items-center justify-between';
+                container.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="p-2.5 bg-emerald-100 text-emerald-600 rounded-lg">
+                            <i class="fa-solid fa-shield-check text-lg"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-sm">Presupuesto bajo perfecto control</h4>
+                            <p class="text-xs text-emerald-700">No se detectaron fugas ni sobrecostos en ninguna categoría registrada.</p>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 bg-emerald-600 text-white font-bold rounded-lg text-xs">100% Eficiente</span>
+                `;
+            }
+        }
+
+        function renderCharts() {
+            const totals = calculateTotals();
+
+            // Chart 1: Bar Chart (Presupuesto vs Real)
+            const ctxBar = document.getElementById('chartPresupuestoVsReal')?.getContext('2d');
+            if (ctxBar) {
+                if (chartBarInstance) chartBarInstance.destroy();
+
+                chartBarInstance = new Chart(ctxBar, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Ingresos', 'Costos Fijos', 'Gastos Variables', 'Cuotas Deudas'],
+                        datasets: [
+                            {
+                                label: 'Presupuesto / Esperado',
+                                data: [totals.totalIngresosEsperado, totals.totalCFPresupuesto, totals.totalGVPresupuesto, totals.totalCuotaDeudas],
+                                backgroundColor: '#94a3b8',
+                                borderRadius: 6
+                            },
+                            {
+                                label: 'Ejecutado Real',
+                                data: [totals.totalIngresosRecibido, totals.totalCFReal, totals.totalGVReal, totals.totalCuotaDeudas],
+                                backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'],
+                                borderRadius: 6
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { font: { family: 'Inter', size: 11 } } }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
+
+            // Chart 2: Doughnut Chart (Distribución de Salidas)
+            const ctxPie = document.getElementById('chartDistribucionGastos')?.getContext('2d');
+            if (ctxPie) {
+                if (chartPieInstance) chartPieInstance.destroy();
+
+                chartPieInstance = new Chart(ctxPie, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Costos Fijos', 'Gastos Variables', 'Cuotas Deudas'],
+                        datasets: [{
+                            data: [totals.totalCFReal, totals.totalGVReal, totals.totalCuotaDeudas],
+                            backgroundColor: ['#2563eb', '#d97706', '#dc2626'],
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { font: { family: 'Inter', size: 11 } } }
+                        },
+                        cutout: '65%'
+                    }
+                });
+            }
+        }
+
+        window.onload = function() {
+            renderAll();
+        };
+    </script>
+</body>
+</html>
